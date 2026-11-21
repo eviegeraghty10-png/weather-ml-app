@@ -2,20 +2,38 @@ from flask import Flask, request, render_template
 import pickle
 import numpy as np
 import time
+import pandas as pd
 
 app = Flask(__name__)
 
 weather_classes = ['clear', 'cloudy', 'drizzly', 'foggy', 'hazey', 'misty', 'rainy', 'smokey', 'thunderstorm']
 
 def load_model(model_path = 'model/model.pkl'):
-	return pickle.load(open(model_path, 'rb'))
+	with open(model_path, 'rb') as model_file:
+		return pickle.load(model_file)
 
 def classify_weather(features):
 	model = load_model()
+
+	features_names = [
+		'temp',
+		'pressure',
+		'humidity',
+		'wind_speed',
+		'wind_deg',
+		'rain_1h',
+		'rain_3h',
+		'snow_3h',
+		'clouds_all'
+	]
+
+	features = pd.DataFrame(features, columns=features_names)
+	features = features.astype(float)
+
 	start = time.time()
 	prediction_index = model.predict(features)[0]
-	latency = round((time.time() - start) * 1000, 2) #we are here
-	prediction = weather_classes[1]
+	latency = round((time.time() - start) * 1000, 2) 
+	prediction = weather_classes[prediction_index]
 	
 	return prediction, latency
 
