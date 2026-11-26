@@ -1,0 +1,37 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+      - cicd
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Kubernetes on EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Checking Kubernetes cluster..."
+            kubectl get nodes
+
+            echo "Deploying new Docker image..."
+            kubectl set image deployment/weather-ml-app weather-ml-app=eviegeraghty10/weather-ml-app:${{ github.event.workflow_run.head_sha }}
+
+            echo "Waiting for rolling deployment to finish..."
+            kubectl rollout status deployment/weather-ml-app --timeout=180s
+
+            echo "Checking deployed pods..."
+            kubectl get pods
+
+            echo "Deployment completed successfully!"
