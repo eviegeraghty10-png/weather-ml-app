@@ -35,3 +35,13 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t weather-ml-app:${{ github.sha }} .
+
+      - name: Run Docker container
+        run: docker run -d --name weather-test weather-ml-app:${{ github.sha }}
+
+      - name: Execute command inside container
+        run: docker exec weather-test python --version
+
+      - name: Clean up container
+        if: always()
+        run: docker rm -f weather-test || true
