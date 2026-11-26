@@ -12,26 +12,25 @@ on:
 jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - name: Deploy to Kubernetes on EC2
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            echo "Checking Kubernetes cluster..."
-            kubectl get nodes
+      - name: Check Kubernetes cluster
+        run: kubectl get nodes
 
-            echo "Deploying new Docker image..."
-            kubectl set image deployment/weather-ml-app weather-ml-app=eviegeraghty10/weather-ml-app:${{ github.event.workflow_run.head_sha }}
+      - name: Deploy new Docker image
+        run: |
+          kubectl set image deployment/weather-ml-app \
+            weather-ml-app=eviegeraghty10/weather-ml-app:${{ github.event.workflow_run.head_sha }}
 
-            echo "Waiting for rolling deployment to finish..."
-            kubectl rollout status deployment/weather-ml-app --timeout=180s
+      - name: Wait for rolling deployment
+        run: |
+          kubectl rollout status deployment/weather-ml-app --timeout=180s
 
-            echo "Checking deployed pods..."
-            kubectl get pods
+      - name: Check deployed pods
+        run: |
+          kubectl get pods
+          kubectl get deployment weather-ml-app
 
-            echo "Deployment completed successfully!"
+      - name: Confirm deployment
+        run: echo "Deployment completed successfully!"
