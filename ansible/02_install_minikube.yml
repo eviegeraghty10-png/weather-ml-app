@@ -1,0 +1,63 @@
+---
+# Task 3(b): Install Minikube and start a single-node Kubernetes cluster.
+# Minikube uses the Docker driver, so it runs as the normal user (ubuntu),
+# not root. Only the install steps use "become: true".
+- name: "Task 3(b) - Install and start Minikube"
+  hosts: production
+  become: false
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Download Minikube and verify its SHA256 checksum
+      become: true
+      ansible.builtin.get_url:
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        checksum: "sha256:https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64.sha256"
+        dest: /usr/local/bin/minikube
+        mode: "0755"
+
+    - name: Make sure Docker is running and starts on boot
+      become: true
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: "Add {{ ansible_user_id }} to the docker group"
+      become: true
+      ansible.builtin.user:
+        name: "{{ ansible_user_id }}"
+        groups: docker
+        append: true
+
+    - name: Check whether Minikube is already running
+      ansible.builtin.command: minikube status
+      register: minikube_status
+      failed_when: false
+      changed_when: false
+
+    # "sg docker" runs the command with docker group rights straight away,
+    # even if the user was only added to the group in the step above.
+    - name: Start Minikube with the Docker driver
+      ansible.builtin.command: >
+        sg docker -c "minikube start --driver=docker
+        --cpus={{ minikube_cpus }} --memory={{ minikube_memory }}"
+      when: "'host: Running' not in minikube_status.stdout"
+
+    - name: Wait until the Kubernetes node is Ready
+      ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=180s
+      changed_when: false
+
+    - name: Get Minikube status
+      ansible.builtin.command: minikube status
+      register: minikube_final
+      changed_when: false
+
+    - name: Get Kubernetes nodes
+      ansible.builtin.command: kubectl get nodes -o wide
+      register: nodes
+      changed_when: false
+
+    - name: Show cluster status
+      ansible.builtin.debug:
+        msg: "{{ minikube_final.stdout_lines + [''] + nodes.stdout_lines }}"

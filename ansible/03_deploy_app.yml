@@ -1,0 +1,29 @@
+---
+# Task 3(c): Deploy the DockerHub image to Kubernetes using k8s/deployment.yaml.
+- name: "Task 3(c) - Deploy the DockerHub image to Kubernetes"
+  hosts: production
+  become: false
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Check Minikube is running
+      ansible.builtin.command: minikube status
+      changed_when: false
+
+    - name: Apply the Deployment manifest
+      ansible.builtin.command: kubectl apply -f {{ k8s_dir }}/deployment.yaml
+      register: apply_result
+      changed_when: "'unchanged' not in apply_result.stdout"
+
+    - name: Wait for all pods to pull the image and become ready
+      ansible.builtin.command: kubectl rollout status deployment/{{ deployment_name }} --timeout=300s
+      changed_when: false
+
+    - name: Get the Deployment and its pods
+      ansible.builtin.command: kubectl get deployment,pods -l app={{ deployment_name }} -o wide
+      register: deploy_info
+      changed_when: false
+
+    - name: Show the Deployment and its pods
+      ansible.builtin.debug:
+        var: deploy_info.stdout_lines

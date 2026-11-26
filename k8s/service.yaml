@@ -1,0 +1,17 @@
+# Kubernetes Service for the Weather ML Flask app (Task 3d).
+# NodePort makes the app reachable at http://$(minikube ip):30080
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-ml-app-service
+  labels:
+    app: weather-ml-app
+spec:
+  type: NodePort
+  selector:
+    app: weather-ml-app      # load-balances across every pod with this label
+  ports:
+    - protocol: TCP
+      port: 5000             # port of the Service inside the cluster
+      targetPort: 5000       # containerPort in deployment.yaml
+      nodePort: 30080        # NODE_PORT used in the video: curl $(minikube ip):30080

@@ -1,0 +1,41 @@
+---
+# Task 3(e): Scale the Deployment so rolling updates can run without downtime.
+# With 3 replicas, maxSurge 1 and maxUnavailable 0 (set in deployment.yaml),
+# Kubernetes starts one new pod, waits until it is ready, then removes one old
+# pod, and repeats. At least 3 pods serve traffic the whole time.
+- name: "Task 3(e) - Scale the Deployment for rolling updates"
+  hosts: production
+  become: false
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Get the current number of replicas
+      ansible.builtin.command: >
+        kubectl get deployment {{ deployment_name }} -o jsonpath={.spec.replicas}
+      register: current_replicas
+      changed_when: false
+
+    - name: "Scale the Deployment to {{ replicas }} replicas"
+      ansible.builtin.command: >
+        kubectl scale deployment/{{ deployment_name }} --replicas={{ replicas }}
+      changed_when: current_replicas.stdout | int != replicas | int
+
+    - name: Wait for all replicas to be ready
+      ansible.builtin.command: kubectl rollout status deployment/{{ deployment_name }} --timeout=300s
+      changed_when: false
+
+    - name: Get the rolling update strategy
+      ansible.builtin.command: >
+        kubectl get deployment {{ deployment_name }}
+        -o jsonpath={.spec.strategy}
+      register: strategy
+      changed_when: false
+
+    - name: Get the running pods
+      ansible.builtin.command: kubectl get pods -l app={{ deployment_name }} -o wide
+      register: pods
+      changed_when: false
+
+    - name: Show the strategy and pods
+      ansible.builtin.debug:
+        msg: "{{ ['Strategy: ' ~ strategy.stdout, ''] + pods.stdout_lines }}"

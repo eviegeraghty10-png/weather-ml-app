@@ -1,0 +1,7 @@
+---
+# Runs all of Task 3 in order: ansible-playbook site.yml
+- import_playbook: 01_install_kubectl.yml
+- import_playbook: 02_install_minikube.yml
+- import_playbook: 03_deploy_app.yml
+- import_playbook: 04_create_service.yml
+- import_playbook: 05_scale_deployment.yml
