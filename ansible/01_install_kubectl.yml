@@ -1,0 +1,35 @@
+---
+# Task 3(a): Install kubectl, the command-line tool used to talk to Kubernetes.
+- name: "Task 3(a) - Install kubectl"
+  hosts: production
+  become: true                     # writing to /usr/local/bin needs root
+  tasks:
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
+        update_cache: true
+
+    - name: Find the latest stable kubectl version
+      ansible.builtin.uri:
+        url: https://dl.k8s.io/release/stable.txt
+        return_content: true
+      register: kubectl_stable
+
+    - name: Download kubectl and verify its SHA256 checksum
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_stable.content | trim }}/bin/linux/amd64/kubectl"
+        checksum: "sha256:https://dl.k8s.io/release/{{ kubectl_stable.content | trim }}/bin/linux/amd64/kubectl.sha256"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+
+    - name: Check kubectl runs
+      ansible.builtin.command: kubectl version --client
+      register: kubectl_version
+      changed_when: false
+
+    - name: Show installed kubectl version
+      ansible.builtin.debug:
+        var: kubectl_version.stdout_lines

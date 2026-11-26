@@ -1,0 +1,9 @@
+# Shared settings for all Task 3 playbooks
+k8s_dir: "{{ playbook_dir }}/../k8s"      # the k8s/ folder in the repo
+deployment_name: weather-ml-app
+service_name: weather-ml-app-service
+node_port: 30080                           # must match nodePort in k8s/service.yaml
+public_port: 5000                          # port opened in the EC2 security group
+replicas: 3                                # pods to run (Task 3e)
+minikube_cpus: 2                           # t3.large has 2 vCPUs
+minikube_memory: 4096                      # MB, t3.large has 8 GB
