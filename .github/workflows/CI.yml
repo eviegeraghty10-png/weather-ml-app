@@ -40,10 +40,13 @@ jobs:
          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image
-        run: docker build -t weather-ml-app:${{ github.sha }} .
+        run: |
+          docker build \
+            -t eviegeraghty10/weather-ml-app:${{ github.sha }} \
+            -t eviegeraghty10/weather-ml-app:latest .
 
       - name: Run Docker container
-        run: docker run -d --name weather-test weather-ml-app:${{ github.sha }}
+        run: docker run -d --name weather-test eviegeraghty10/weather-ml-app:${{ github.sha }}
 
       - name: Execute command inside container
         run: docker exec weather-test python --version
