@@ -27,7 +27,7 @@ spec:
       containers:
         - name: weather-ml-app
           # CHANGE THIS to your team's DockerHub image (same one Person 1 pushed)
-          image: eviegeraghty10/weather-ml-app:1.0
+          image: eviegeraghty10/weather-ml-app:v2
           imagePullPolicy: Always
           ports:
             - containerPort: 5000  # Flask listens on 5000 (see app.py and Dockerfile)
